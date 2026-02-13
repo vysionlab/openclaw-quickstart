@@ -1,66 +1,126 @@
 #!/bin/bash
 # ============================================================
-# OpenClaw Quick Deploy
-# Sets up a fully configured OpenClaw instance on Ubuntu
-# Usage: curl -fsSL <url> | bash
-#   or:  bash install.sh
+# OpenClaw Quickstart Installer
+# Works on macOS and Linux (Ubuntu/Debian)
+# Usage: bash install.sh
 # ============================================================
 set -e
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m'
 step() { echo -e "\n${GREEN}[✓]${NC} $1"; }
 warn() { echo -e "${YELLOW}[!]${NC} $1"; }
+fail() { echo -e "${RED}[✗]${NC} $1"; exit 1; }
 
+OS="$(uname -s)"
 echo ""
-echo "🤖 OpenClaw Quick Deploy"
-echo "========================"
+echo "🦞 OpenClaw Quickstart"
+echo "======================"
+echo "Detected: $OS"
 echo ""
-
-# --- System deps ---
-step "Installing system dependencies..."
-sudo apt-get update -qq
-sudo apt-get install -y -qq git curl jq chromium-browser poppler-utils python3-pip
 
 # --- Node.js 22+ ---
-if ! command -v node &>/dev/null || [ "$(node -v | cut -d. -f1 | tr -d v)" -lt 22 ]; then
-    step "Installing Node.js 22..."
-    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+if command -v node &>/dev/null; then
+    NODE_MAJOR="$(node -v | cut -d. -f1 | tr -d v)"
+    if [ "$NODE_MAJOR" -ge 22 ]; then
+        step "Node $(node -v) already installed"
+    else
+        warn "Node $(node -v) found but 22+ required"
+        NEED_NODE=true
+    fi
+else
+    NEED_NODE=true
 fi
-step "Node $(node -v)"
+
+if [ "$NEED_NODE" = true ]; then
+    if [ "$OS" = "Darwin" ]; then
+        if command -v brew &>/dev/null; then
+            step "Installing Node 22 via Homebrew..."
+            brew install node@22
+            brew link node@22 --overwrite --force 2>/dev/null || true
+        else
+            fail "Homebrew not found. Install it first: https://brew.sh"
+        fi
+    else
+        step "Installing Node 22 via NodeSource..."
+        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    fi
+    step "Node $(node -v) installed"
+fi
 
 # --- npm global without sudo ---
-mkdir -p ~/.npm-global
-npm config set prefix '~/.npm-global'
-grep -q '.npm-global/bin' ~/.bashrc || echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-export PATH=~/.npm-global/bin:$PATH
+if [ "$OS" = "Darwin" ]; then
+    # macOS with Homebrew usually handles this fine
+    NPM_PREFIX="$(npm config get prefix 2>/dev/null)"
+    if [[ "$NPM_PREFIX" == /usr/local* ]] || [[ "$NPM_PREFIX" == /opt/homebrew* ]]; then
+        step "npm prefix OK ($NPM_PREFIX)"
+    else
+        mkdir -p ~/.npm-global
+        npm config set prefix '~/.npm-global'
+        SHELL_RC="$HOME/.zshrc"
+        grep -q '.npm-global/bin' "$SHELL_RC" 2>/dev/null || echo 'export PATH=~/.npm-global/bin:$PATH' >> "$SHELL_RC"
+        export PATH=~/.npm-global/bin:$PATH
+        warn "Added ~/.npm-global/bin to PATH in $SHELL_RC — restart your terminal or: source $SHELL_RC"
+    fi
+else
+    mkdir -p ~/.npm-global
+    npm config set prefix '~/.npm-global'
+    SHELL_RC="$HOME/.bashrc"
+    grep -q '.npm-global/bin' "$SHELL_RC" 2>/dev/null || echo 'export PATH=~/.npm-global/bin:$PATH' >> "$SHELL_RC"
+    export PATH=~/.npm-global/bin:$PATH
+fi
 
 # --- OpenClaw ---
-step "Installing OpenClaw..."
-npm install -g openclaw
-step "OpenClaw $(openclaw --version) installed"
+if command -v openclaw &>/dev/null; then
+    step "OpenClaw already installed ($(openclaw --version 2>/dev/null || echo 'unknown version'))"
+    read -p "Reinstall/upgrade? [y/N]: " upgrade
+    if [[ "$upgrade" =~ ^[Yy] ]]; then
+        npm install -g openclaw@latest
+        step "OpenClaw upgraded"
+    fi
+else
+    step "Installing OpenClaw..."
+    npm install -g openclaw@latest
+    step "OpenClaw $(openclaw --version 2>/dev/null) installed"
+fi
 
-# --- ClawHub CLI ---
-step "Installing ClawHub CLI..."
-npm install -g clawhub --force 2>/dev/null
-
-# --- Python tools ---
-step "Installing Python tools..."
-pip3 install --break-system-packages agentmail python-dotenv 2>/dev/null || pip install agentmail python-dotenv 2>/dev/null
+# --- Optional: system tools ---
+if [ "$OS" = "Darwin" ]; then
+    # macOS — install optional tools via brew
+    for tool in jq git; do
+        command -v $tool &>/dev/null || { step "Installing $tool..."; brew install $tool; }
+    done
+else
+    # Linux — install optional tools
+    step "Installing system tools (git, jq, curl)..."
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq git curl jq
+fi
 
 # --- Workspace ---
-WORKSPACE="$HOME/workspace"
-read -p "Workspace directory [$WORKSPACE]: " custom_ws
-WORKSPACE="${custom_ws:-$WORKSPACE}"
+DEFAULT_WS="$HOME/openclaw"
+echo ""
+read -p "Workspace directory [$DEFAULT_WS]: " custom_ws
+WORKSPACE="${custom_ws:-$DEFAULT_WS}"
 mkdir -p "$WORKSPACE"
 
-# --- Scaffold workspace files ---
-step "Creating workspace files..."
+# --- Don't overwrite existing files ---
+write_if_missing() {
+    if [ -f "$1" ]; then
+        warn "Skipping $1 (already exists)"
+    else
+        cat > "$1"
+        step "Created $(basename $1)"
+    fi
+}
 
-# AGENTS.md
-cat > "$WORKSPACE/AGENTS.md" << 'EOF'
+# --- Scaffold workspace ---
+step "Setting up workspace at $WORKSPACE..."
+
+write_if_missing "$WORKSPACE/AGENTS.md" << 'EOF'
 # AGENTS.md
 
 ## Every Session
@@ -70,13 +130,13 @@ cat > "$WORKSPACE/AGENTS.md" << 'EOF'
 4. In main session: also read `MEMORY.md`
 
 ## Memory
-- **Daily notes:** `memory/YYYY-MM-DD.md` — raw logs
-- **Long-term:** `MEMORY.md` — curated insights
+- **Daily notes:** `memory/YYYY-MM-DD.md` — raw logs of what happened
+- **Long-term:** `MEMORY.md` — curated insights and decisions
 - Write things down. Files survive restarts. "Mental notes" don't.
 
 ## Safety
 - Don't exfiltrate private data
-- `trash` > `rm`
+- `trash` > `rm` (recoverable beats gone)
 - Ask before sending emails, posts, or anything external
 
 ## External vs Internal
@@ -84,8 +144,7 @@ cat > "$WORKSPACE/AGENTS.md" << 'EOF'
 **Ask first:** Sending emails/posts, destructive commands, anything uncertain
 EOF
 
-# SOUL.md
-cat > "$WORKSPACE/SOUL.md" << 'EOF'
+write_if_missing "$WORKSPACE/SOUL.md" << 'EOF'
 # SOUL.md — Who You Are
 
 ## Personality
@@ -107,106 +166,152 @@ Each session starts fresh. Your files ARE your memory. Read them. Update them.
 *This file is yours to evolve.*
 EOF
 
-# USER.md
-cat > "$WORKSPACE/USER.md" << 'EOF'
+write_if_missing "$WORKSPACE/USER.md" << 'EOF'
 # USER.md — About Your Human
 
-- **Name:** (fill in)
+- **Name:** (your agent will learn this)
 - **Timezone:** (fill in)
-- **Notes:** (add context as you learn about them)
+- **Notes:** (add context as you go)
 EOF
 
-# IDENTITY.md
-cat > "$WORKSPACE/IDENTITY.md" << 'EOF'
+write_if_missing "$WORKSPACE/IDENTITY.md" << 'EOF'
 # IDENTITY.md
 
-- **Name:** (choose a name)
+- **Name:** (pick one, or let your agent choose)
 - **Vibe:** Helpful, capable, gets things done
 EOF
 
-# MEMORY.md
-cat > "$WORKSPACE/MEMORY.md" << 'EOF'
+write_if_missing "$WORKSPACE/MEMORY.md" << 'EOF'
 # MEMORY.md — Long-Term Memory
 
 *Add important context, decisions, preferences, and lessons learned here.*
-*This file is your curated memory — distilled from daily logs.*
+*This is curated memory — distilled from daily logs, not raw notes.*
 EOF
 
-# TOOLS.md
-cat > "$WORKSPACE/TOOLS.md" << 'EOF'
+write_if_missing "$WORKSPACE/TOOLS.md" << 'EOF'
 # TOOLS.md — Local Notes
 
-Add environment-specific details here:
+Environment-specific details go here:
 - API keys and endpoints
-- Device names
+- Device names and IPs
 - Service configurations
-- Anything unique to your setup
+- SSH hosts, speaker names, camera IDs — anything unique to your setup
+
+Keep this out of version control if it has secrets.
 EOF
 
-# HEARTBEAT.md
-cat > "$WORKSPACE/HEARTBEAT.md" << 'EOF'
+write_if_missing "$WORKSPACE/HEARTBEAT.md" << 'EOF'
 # HEARTBEAT.md
 
-# Add periodic tasks below. The agent checks this on each heartbeat.
-# Keep it small to limit token burn.
-# Leave empty to skip heartbeat processing.
+# Add periodic tasks here. The agent checks this on each heartbeat.
+# Leave empty (or comments only) to skip heartbeat processing.
+#
+# Example:
+# - Check email for urgent messages
+# - Check calendar for upcoming events
 EOF
 
-# memory dir
+write_if_missing "$WORKSPACE/WORKSPACE.md" << 'EOF'
+# WORKSPACE.md — Architecture
+
+Document your workspace structure, cron schedule, connected services,
+and best practices here. Your agent will maintain this file over time.
+
+## File Structure
+- `AGENTS.md` — Agent behavior rules
+- `SOUL.md` — Personality & tone
+- `USER.md` — About your human
+- `MEMORY.md` — Long-term curated memory
+- `TOOLS.md` — API keys & local config
+- `HEARTBEAT.md` — Periodic check tasks
+- `memory/` — Daily logs
+- `skills/` — Custom skills
+- `templates/` — Reusable templates
+- `config/` — Credentials & config files
+- `assets/` — Static files
+EOF
+
 mkdir -p "$WORKSPACE/memory"
 mkdir -p "$WORKSPACE/skills"
 mkdir -p "$WORKSPACE/templates"
 mkdir -p "$WORKSPACE/assets"
 mkdir -p "$WORKSPACE/config"
 
-step "Workspace scaffolded at $WORKSPACE"
-
 # --- Git init ---
 cd "$WORKSPACE"
 if [ ! -d .git ]; then
-    git init
-    cat > .gitignore << 'GI'
+    step "Initializing git repo..."
+    git init -q
+    write_if_missing ".gitignore" << 'GI'
+# Dependencies
 node_modules/
+
+# Secrets — keep out of git
+TOOLS.md
+config/cron-credentials.md
 *.key
-*.env
-.openclaw/
+*.pem
+.env
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
 __pycache__/
 *.pyc
+
+# Logs
+*.log
 GI
     git add -A
-    git commit -m "Initial workspace setup"
+    git commit -q -m "🦞 Initial OpenClaw workspace"
+    step "Git repo initialized with first commit"
+else
+    warn "Git repo already exists — skipping init"
 fi
+
+# --- Backup script ---
+write_if_missing "$WORKSPACE/backup.sh" << 'BACKUP'
+#!/bin/bash
+cd "$(dirname "$0")"
+git add -A
+git diff --cached --quiet || git commit -m "🧠 Auto-backup $(date -u +%Y-%m-%d\ %H:%M\ UTC)"
+git push origin main 2>/dev/null || git push origin master 2>/dev/null || true
+BACKUP
+chmod +x "$WORKSPACE/backup.sh"
 
 # --- Summary ---
 echo ""
 echo "========================================"
-echo "🤖 OpenClaw is installed!"
+echo "🦞 OpenClaw Quickstart Complete!"
 echo "========================================"
+echo ""
+echo "Workspace: $WORKSPACE"
 echo ""
 echo "Next steps:"
 echo ""
-echo "  1. Configure OpenClaw:"
-echo "     openclaw configure"
+echo "  1. Run the onboarding wizard:"
+echo "     cd $WORKSPACE"
+echo "     openclaw onboard --install-daemon"
 echo ""
-echo "  2. You'll need at minimum:"
-echo "     - Anthropic API key (console.anthropic.com)"
-echo "     - A channel: Telegram bot token, or Discord, etc."
+echo "  2. You'll need:"
+echo "     - Anthropic API key → console.anthropic.com"
+echo "     - A chat channel → Telegram bot (easiest) or Discord/WhatsApp"
 echo ""
 echo "  3. Optional but recommended:"
-echo "     - Brave Search API key (brave.com/search/api)"
-echo "     - Tailscale for remote access"
+echo "     - Brave Search API key → brave.com/search/api"
+echo "     - Google AI Studio key → aistudio.google.com (for memory search)"
 echo ""
-echo "  4. Start it up:"
+echo "  4. Start chatting:"
 echo "     openclaw gateway start"
+echo "     (then message your bot on Telegram/Discord/etc.)"
 echo ""
-echo "  5. Install skills from ClawHub:"
-echo "     npx clawhub search <keyword>"
-echo "     npx clawhub install <skill>"
+echo "  5. Your agent will help set up everything else!"
 echo ""
-echo "  6. Talk to your agent! It will help set up the rest."
-echo ""
-echo "Workspace: $WORKSPACE"
-echo "Docs: https://docs.openclaw.ai"
-echo "Skills: https://clawhub.com"
+echo "Docs:      https://docs.openclaw.ai"
+echo "Skills:    https://clawhub.com"
 echo "Community: https://discord.com/invite/clawd"
 echo ""
