@@ -122,6 +122,39 @@ Browse the full catalog at [clawhub.com](https://clawhub.com).
 - ✅ **Skills on demand** — descriptions route, full instructions load only when needed
 - ✅ **Config written automatically** — no manual JSON editing
 
+## Moving to a New Server
+
+Use `migrate.sh` to package your existing workspace into a portable archive.
+
+### On the old server
+
+```bash
+bash migrate.sh ~/openclaw openclaw-backup.tar.gz
+```
+
+This packages: `SOUL.md`, `MEMORY.md`, `USER.md`, `AGENTS.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `memory/`, `skills/`, `templates/`, `assets/`, and `config/` (which includes your API keys).
+
+### On the new server
+
+```bash
+# 1. Run the quickstart installer
+curl -fsSL https://raw.githubusercontent.com/vysionlab/openclaw-quickstart/main/install.sh | bash
+
+# 2. Extract your workspace backup
+tar -xzf openclaw-backup.tar.gz -C ~/openclaw
+
+# 3. Start the gateway and re-pair your channel
+openclaw gateway start
+openclaw pairing list telegram
+openclaw pairing approve telegram <CODE>
+
+# 4. Recreate cron jobs (check your old server first)
+openclaw cron list   # note existing jobs on old server
+openclaw cron add    # recreate them on new server
+```
+
+> ⚠️ The archive includes `config/cron-credentials.md` (API keys). Transfer securely — don't share it publicly.
+
 ## Links
 
 - [OpenClaw Docs](https://docs.openclaw.ai)
