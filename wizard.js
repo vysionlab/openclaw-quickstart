@@ -316,25 +316,40 @@ async function stepModel(state) {
     anthropic: [
       {
         label: "claude-sonnet-4-6",
-        desc: "Fast, smart, affordable. Best for daily use.",
+        desc: "Best combo of speed + intelligence. Recommended for daily use.",
         value: "anthropic/claude-sonnet-4-6",
       },
       {
         label: "claude-opus-4-6",
-        desc: "Most powerful. Higher cost.",
+        desc: "Most capable — coding, agents, complex reasoning. Higher cost.",
         value: "anthropic/claude-opus-4-6",
+      },
+      {
+        label: "claude-haiku-4-5",
+        desc: "Fastest, most affordable. Great for high-volume tasks.",
+        value: "anthropic/claude-haiku-4-5",
       },
     ],
     openai: [
       {
-        label: "gpt-4o",
-        desc: "Flagship multimodal model.",
-        value: "openai/gpt-4o",
+        label: "gpt-5.2",
+        desc: "Latest flagship. Best for coding and agentic tasks.",
+        value: "openai/gpt-5.2",
       },
       {
-        label: "gpt-4o-mini",
-        desc: "Faster and cheaper.",
-        value: "openai/gpt-4o-mini",
+        label: "gpt-5-mini",
+        desc: "Fast, cost-efficient version of GPT-5.",
+        value: "openai/gpt-5-mini",
+      },
+      {
+        label: "o3",
+        desc: "Reasoning model for complex, multi-step problems.",
+        value: "openai/o3",
+      },
+      {
+        label: "gpt-4.1",
+        desc: "Smartest non-reasoning model. Lighter than GPT-5.",
+        value: "openai/gpt-4.1",
       },
     ],
     google: [
@@ -361,31 +376,41 @@ async function stepModel(state) {
     ],
     ollama: [
       {
-        label: "llama3.2",
-        desc: "Meta's Llama 3.2 — runs locally.",
-        value: "ollama/llama3.2",
+        label: "llama3.3",
+        desc: "Meta's Llama 3.3 70B — powerful local model.",
+        value: "ollama/llama3.3",
       },
       {
         label: "mistral",
-        desc: "Mistral 7B — fast local model.",
+        desc: "Mistral 7B — fast and lightweight.",
         value: "ollama/mistral",
       },
       {
+        label: "deepseek-r1",
+        desc: "DeepSeek R1 — strong reasoning model, runs locally.",
+        value: "ollama/deepseek-r1",
+      },
+      {
         label: "Enter a custom model name",
-        desc: "e.g. ollama/phi4",
+        desc: "Any model available via 'ollama pull'",
         value: "_custom",
       },
     ],
     openrouter: [
       {
-        label: "anthropic/claude-sonnet-4-5",
-        desc: "Claude via OpenRouter.",
-        value: "openrouter/anthropic/claude-sonnet-4-5",
+        label: "anthropic/claude-opus-4-6",
+        desc: "Latest Claude Opus via OpenRouter.",
+        value: "openrouter/anthropic/claude-opus-4-6",
       },
       {
-        label: "mistralai/mistral-large",
-        desc: "Mistral Large via OpenRouter.",
-        value: "openrouter/mistralai/mistral-large",
+        label: "google/gemini-3.1-pro-preview",
+        desc: "Latest Gemini 3 via OpenRouter.",
+        value: "openrouter/google/gemini-3.1-pro-preview",
+      },
+      {
+        label: "openai/gpt-5.2",
+        desc: "Latest GPT-5 via OpenRouter.",
+        value: "openrouter/openai/gpt-5.2",
       },
       {
         label: "Enter a custom model name",
