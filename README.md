@@ -1,22 +1,17 @@
 # 🦞 OpenClaw Quickstart
 
-Get a fully configured OpenClaw workspace running in under 5 minutes. Works on **macOS** and **Linux**.
+Get a fully configured OpenClaw agent running in under 5 minutes. Works on **macOS** (Intel + Apple Silicon) and **Linux**.
 
 ## What You Get
 
-- **OpenClaw** installed and ready to run
-- **Pre-built workspace** with best-practice file structure:
-  - `AGENTS.md` — Agent behavior rules and session startup routine
-  - `SOUL.md` — Personality (editable — make it yours)
-  - `IDENTITY.md` — Agent's name and character
-  - `USER.md` — Info about you (agent learns over time)
-  - `MEMORY.md` — Long-term curated memory
-  - `TOOLS.md` — Your API keys & local config (gitignored)
-  - `HEARTBEAT.md` — Periodic task checklist
-  - `WORKSPACE.md` — Architecture documentation (agent maintains)
-- **Git repo** initialized with sensible `.gitignore` (secrets excluded)
-- **Backup script** ready for cron
-- Folder structure for `memory/`, `skills/`, `templates/`, `config/`, `assets/`
+A guided setup wizard that walks you through:
+
+- 🤖 **Model selection** — Anthropic, OpenAI, Google, Ollama, OpenRouter
+- 💬 **Channel setup** — Telegram, Discord, Signal, WhatsApp, or local
+- 🧠 **Agent identity** — name, personality, workspace location
+- 🔑 **API key configuration** — masked input, auto-detects existing env vars
+- 🛠️ **Skills install** — pick from popular skills via clawhub
+- ⚙️ **Config written for you** — `openclaw.json`, workspace files, git repo, shell RC
 
 ## Quick Start
 
@@ -27,65 +22,64 @@ bash install.sh
 ```
 
 Or one-liner:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vysionlab/openclaw-quickstart/main/install.sh | bash
 ```
 
+The installer handles system dependencies (Node.js 22+, Homebrew on Mac, git, jq), installs OpenClaw, then launches the interactive wizard automatically.
+
 ## Requirements
 
-- **macOS**: Homebrew (`brew.sh`) — the script uses it to install Node if needed
-- **Linux**: apt-based distro (Ubuntu, Debian, WSL)
+- **macOS**: Xcode CLI tools + Homebrew (installed automatically if missing)
+- **Linux**: Ubuntu/Debian with apt
 - **Node.js 22+** — installed automatically if missing
+- **nvm** — used automatically if present
 
-## After Install
+## The Setup Wizard
 
-1. **Run the wizard**: `openclaw onboard --install-daemon`
-2. **Add your API key**: You'll need an Anthropic key from [console.anthropic.com](https://console.anthropic.com)
-3. **Connect a channel**: Telegram is easiest — create a bot via [@BotFather](https://t.me/BotFather)
-4. **Start it**: `openclaw gateway start`
-5. **Talk to your agent** — it'll help configure everything else
+After dependencies are ready, you'll be walked through 7 steps:
 
-## Optional (Recommended)
+| Step | What happens |
+|------|-------------|
+| 1 | Welcome |
+| 2 | Choose your workspace directory |
+| 3 | Name your agent + pick a personality vibe |
+| 4 | Pick your AI provider + model, enter API key |
+| 5 | Connect a chat channel (Telegram is easiest) |
+| 6 | Optional add-ons: Brave Search, AgentMail |
+| 7 | Install skills from clawhub |
 
-| Service | Why | Get it |
-|---------|-----|--------|
-| Brave Search API | Web search from chat | [brave.com/search/api](https://brave.com/search/api/) |
-| AgentMail | Dedicated agent email inbox | [agentmail.to](https://agentmail.to) |
-| Tailscale | Access from anywhere | [tailscale.com](https://tailscale.com/) |
-| Google AI Studio | Gemini API access | [aistudio.google.com](https://aistudio.google.com/apikey) |
+At the end, your `~/.openclaw/openclaw.json` is written, workspace files are scaffolded, git is initialized, and you get exact commands to pair your channel and start chatting.
 
-## Backup to GitHub
-
-The installer creates `backup.sh`. To auto-backup daily:
+## After Setup
 
 ```bash
-# Add a GitHub remote first:
-cd ~/openclaw
-git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
+# Start your agent
+openclaw gateway start
 
-# Then add to cron (daily at 6am UTC):
-crontab -e
-# Add:
-0 6 * * * cd ~/openclaw && ./backup.sh >> backup.log 2>&1
+# Approve Telegram pairing (if you chose Telegram)
+openclaw pairing list telegram
+openclaw pairing approve telegram <CODE>
+
+# Or chat in the terminal
+openclaw chat
 ```
 
-Or set up OpenClaw's built-in cron to handle it from within the agent.
-
-## File Structure
+## Workspace File Structure
 
 ```
 ~/openclaw/
 ├── AGENTS.md          # Session startup routine & behavior rules
-├── SOUL.md            # Agent personality & tone
+├── SOUL.md            # Agent personality & tone (shaped by your vibe choice)
 ├── IDENTITY.md        # Agent's name & character
 ├── USER.md            # About you
-├── MEMORY.md          # Curated long-term memory (main session only)
+├── MEMORY.md          # Curated long-term memory
 ├── WORKSPACE.md       # Architecture docs (agent maintains this)
 ├── TOOLS.md           # API keys & local config (gitignored)
 ├── HEARTBEAT.md       # Periodic check tasks
-├── backup.sh          # Git backup script
-├── memory/            # Daily logs (memory/YYYY-MM-DD.md)
-├── skills/            # Custom skills (from clawhub.com or hand-rolled)
+├── memory/            # Daily logs (YYYY-MM-DD.md)
+├── skills/            # Installed skills
 ├── templates/         # Reusable templates
 ├── config/            # Credentials & config (gitignored)
 └── assets/            # Static files
@@ -95,20 +89,38 @@ Or set up OpenClaw's built-in cron to handle it from within the agent.
 
 Your agent wakes up fresh each session. The file system is its memory:
 
-- **`memory/YYYY-MM-DD.md`** — Daily raw logs. What happened, decisions made, things to follow up on.
-- **`MEMORY.md`** — Curated long-term memory. The agent distills daily logs into this over time. Think of it as the agent's "brain" — not raw notes, but the things worth keeping.
-- **`TOOLS.md`** — Setup-specific details: device names, API endpoints, SSH hosts, anything unique to your environment.
+- **`memory/YYYY-MM-DD.md`** — Daily raw logs. What happened, decisions made, follow-ups.
+- **`MEMORY.md`** — Curated long-term memory. The agent distills daily logs into this over time.
+- **`TOOLS.md`** — Setup-specific details: API endpoints, device names, anything unique to your environment.
 
 The agent reads recent `memory/` files and `MEMORY.md` on startup. Write things down — mental notes don't survive restarts.
+
+## Optional Add-ons
+
+| Service | Why | Get it |
+|---------|-----|--------|
+| Brave Search API | Web search from chat | [brave.com/search/api](https://brave.com/search/api/) |
+| AgentMail | Dedicated agent email inbox | [agentmail.to](https://agentmail.to) |
+| Tailscale | Access your agent from anywhere | [tailscale.com](https://tailscale.com/) |
+
+## Adding More Skills
+
+```bash
+npm install -g clawhub
+clawhub search <topic>
+clawhub install <skill-name>
+```
+
+Browse the full catalog at [clawhub.com](https://clawhub.com).
 
 ## Best Practices Built In
 
 - ✅ **Secrets excluded from git** — TOOLS.md and config/ are gitignored
 - ✅ **Memory system** — daily logs + curated long-term memory
-- ✅ **Agent reads context on startup** — AGENTS.md defines the startup routine
-- ✅ **Personality is editable** — SOUL.md is yours to shape
-- ✅ **Skills load on demand** — descriptions route, full instructions load only when needed
-- ✅ **Backup-ready** — git initialized, backup script included
+- ✅ **Agent reads context on startup** — AGENTS.md defines the routine
+- ✅ **Personality shaped by you** — wizard writes the right SOUL.md for your vibe
+- ✅ **Skills on demand** — descriptions route, full instructions load only when needed
+- ✅ **Config written automatically** — no manual JSON editing
 
 ## Links
 
