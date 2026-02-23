@@ -6,15 +6,16 @@ Get a fully configured OpenClaw workspace running in under 5 minutes. Works on *
 
 - **OpenClaw** installed and ready to run
 - **Pre-built workspace** with best-practice file structure:
-  - `AGENTS.md` — Agent behavior rules
-  - `SOUL.md` — Personality (editable)
+  - `AGENTS.md` — Agent behavior rules and session startup routine
+  - `SOUL.md` — Personality (editable — make it yours)
+  - `IDENTITY.md` — Agent's name and character
   - `USER.md` — Info about you (agent learns over time)
-  - `MEMORY.md` — Long-term memory
-  - `TOOLS.md` — Your API keys & local config
+  - `MEMORY.md` — Long-term curated memory
+  - `TOOLS.md` — Your API keys & local config (gitignored)
   - `HEARTBEAT.md` — Periodic task checklist
-  - `WORKSPACE.md` — Architecture documentation
+  - `WORKSPACE.md` — Architecture documentation (agent maintains)
 - **Git repo** initialized with sensible `.gitignore` (secrets excluded)
-- **Backup script** ready for hourly cron
+- **Backup script** ready for cron
 - Folder structure for `memory/`, `skills/`, `templates/`, `config/`, `assets/`
 
 ## Quick Start
@@ -49,51 +50,64 @@ curl -fsSL https://raw.githubusercontent.com/vysionlab/openclaw-quickstart/main/
 | Service | Why | Get it |
 |---------|-----|--------|
 | Brave Search API | Web search from chat | [brave.com/search/api](https://brave.com/search/api/) |
-| Google AI Studio key | Memory search (semantic) | [aistudio.google.com](https://aistudio.google.com/apikey) |
+| AgentMail | Dedicated agent email inbox | [agentmail.to](https://agentmail.to) |
 | Tailscale | Access from anywhere | [tailscale.com](https://tailscale.com/) |
+| Google AI Studio | Gemini API access | [aistudio.google.com](https://aistudio.google.com/apikey) |
 
-## Hourly Backup
+## Backup to GitHub
 
-The installer creates `backup.sh`. To auto-backup hourly:
+The installer creates `backup.sh`. To auto-backup daily:
 
 ```bash
 # Add a GitHub remote first:
 cd ~/openclaw
 git remote add origin https://github.com/YOUR_USER/YOUR_REPO.git
 
-# Then add to cron:
+# Then add to cron (daily at 6am UTC):
 crontab -e
-# Add this line:
-0 * * * * cd ~/openclaw && ./backup.sh >> backup.log 2>&1
+# Add:
+0 6 * * * cd ~/openclaw && ./backup.sh >> backup.log 2>&1
 ```
+
+Or set up OpenClaw's built-in cron to handle it from within the agent.
 
 ## File Structure
 
 ```
 ~/openclaw/
-├── AGENTS.md          # How the agent should behave
+├── AGENTS.md          # Session startup routine & behavior rules
 ├── SOUL.md            # Agent personality & tone
+├── IDENTITY.md        # Agent's name & character
 ├── USER.md            # About you
-├── IDENTITY.md        # Agent's name & identity
-├── MEMORY.md          # Curated long-term memory
-├── WORKSPACE.md       # Architecture docs (agent maintains)
+├── MEMORY.md          # Curated long-term memory (main session only)
+├── WORKSPACE.md       # Architecture docs (agent maintains this)
 ├── TOOLS.md           # API keys & local config (gitignored)
 ├── HEARTBEAT.md       # Periodic check tasks
 ├── backup.sh          # Git backup script
 ├── memory/            # Daily logs (memory/YYYY-MM-DD.md)
-├── skills/            # Custom skills
+├── skills/            # Custom skills (from clawhub.com or hand-rolled)
 ├── templates/         # Reusable templates
-├── config/            # Credentials & config
+├── config/            # Credentials & config (gitignored)
 └── assets/            # Static files
 ```
 
+## How Memory Works
+
+Your agent wakes up fresh each session. The file system is its memory:
+
+- **`memory/YYYY-MM-DD.md`** — Daily raw logs. What happened, decisions made, things to follow up on.
+- **`MEMORY.md`** — Curated long-term memory. The agent distills daily logs into this over time. Think of it as the agent's "brain" — not raw notes, but the things worth keeping.
+- **`TOOLS.md`** — Setup-specific details: device names, API endpoints, SSH hosts, anything unique to your environment.
+
+The agent reads recent `memory/` files and `MEMORY.md` on startup. Write things down — mental notes don't survive restarts.
+
 ## Best Practices Built In
 
-- ✅ **Secrets excluded from git** — TOOLS.md and config/cron-credentials.md are gitignored
+- ✅ **Secrets excluded from git** — TOOLS.md and config/ are gitignored
 - ✅ **Memory system** — daily logs + curated long-term memory
-- ✅ **Agent reads context on startup** — AGENTS.md tells it what to load
+- ✅ **Agent reads context on startup** — AGENTS.md defines the startup routine
 - ✅ **Personality is editable** — SOUL.md is yours to shape
-- ✅ **Skills load on demand** — descriptions route, full instructions load only when triggered
+- ✅ **Skills load on demand** — descriptions route, full instructions load only when needed
 - ✅ **Backup-ready** — git initialized, backup script included
 
 ## Links
