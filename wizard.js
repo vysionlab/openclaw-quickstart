@@ -9,6 +9,7 @@ const readline = require("readline");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const https = require("https");
 const { execSync, spawnSync } = require("child_process");
 
 // ── Colors ──────────────────────────────────────────────────
@@ -616,6 +617,73 @@ async function stepSkills(state) {
   await ask("  Press Enter to continue", "");
 }
 
+// ── Best practices fetcher ───────────────────────────────────
+
+// Fetch a raw markdown doc from docs.openclaw.ai
+function fetchDoc(url) {
+  return new Promise((resolve) => {
+    const req = https.get(url, { timeout: 8000 }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => resolve(data));
+    });
+    req.on("error", () => resolve(null));
+    req.on("timeout", () => { req.destroy(); resolve(null); });
+  });
+}
+
+// Strip frontmatter, HTML tags, and extract clean text/markdown
+function cleanDoc(raw) {
+  if (!raw) return null;
+  return raw
+    .replace(/^---[\s\S]*?---\n/m, "")       // frontmatter
+    .replace(/<[^>]+>/g, "")                  // HTML tags
+    .replace(/```[a-z]*\s*theme=\{[^`]*\}/g, "```") // mintlify theme attrs
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")     // JSX comments
+    .replace(/^\s*>\s*##\s*Documentation Index[\s\S]*?further\.\n/m, "") // llms hint
+    .replace(/\n{3,}/g, "\n\n")               // excess blank lines
+    .trim();
+}
+
+// Fetch and curate best practices from official docs
+async function fetchBestPractices() {
+  const sources = [
+    {
+      url: "https://docs.openclaw.ai/gateway/security.md",
+      title: "Security",
+      emoji: "🔒",
+    },
+    {
+      url: "https://docs.openclaw.ai/automation/cron-vs-heartbeat.md",
+      title: "Cron vs Heartbeat",
+      emoji: "⏰",
+    },
+    {
+      url: "https://docs.openclaw.ai/channels/pairing.md",
+      title: "Channel Pairing",
+      emoji: "🔗",
+    },
+  ];
+
+  const results = [];
+  for (const src of sources) {
+    process.stdout.write(`  ${d("→")} Fetching ${src.title}...`);
+    const raw = await fetchDoc(src.url);
+    const content = cleanDoc(raw);
+    if (content) {
+      // Trim to a reasonable length for the workspace file
+      const trimmed = content.length > 2500
+        ? content.slice(0, 2500) + "\n\n*(see full docs at " + src.url.replace(".md", "") + ")*"
+        : content;
+      results.push({ ...src, content: trimmed });
+      process.stdout.write(` ${g("✓")}\n`);
+    } else {
+      process.stdout.write(` ${y("skipped (offline?)")}\n`);
+    }
+  }
+  return results;
+}
+
 // STEP 8 — Write config + scaffold
 async function stepFinalize(state) {
   header(7, 7, "Setting Everything Up");
@@ -683,6 +751,47 @@ async function stepFinalize(state) {
     path.join(ws, "WORKSPACE.md"),
     `# WORKSPACE.md — Architecture\n\n## File Structure\n- AGENTS.md, SOUL.md, IDENTITY.md, USER.md, MEMORY.md, TOOLS.md\n- memory/ — daily logs\n- skills/ — custom skills\n\nLast updated: ${new Date().toISOString().split("T")[0]}\n`
   );
+
+  // Fetch + write best practices from docs.openclaw.ai
+  console.log();
+  console.log(`  ${b("Fetching best practices from docs.openclaw.ai...")}`);
+  const bestPractices = await fetchBestPractices();
+
+  if (bestPractices.length > 0) {
+    const bpPath = path.join(ws, "BEST_PRACTICES.md");
+    const bpContent = [
+      `# OpenClaw Best Practices`,
+      ``,
+      `*Fetched from docs.openclaw.ai on ${new Date().toISOString().split("T")[0]}.*`,
+      `*Run the setup wizard again or visit https://docs.openclaw.ai to refresh.*`,
+      ``,
+      ...bestPractices.map(({ emoji, title, url, content }) => [
+        `---`,
+        ``,
+        `## ${emoji} ${title}`,
+        ``,
+        `*Source: ${url.replace(".md", "")}*`,
+        ``,
+        content,
+        ``,
+      ].join("\n")),
+    ].join("\n");
+
+    fs.writeFileSync(bpPath, bpContent);
+    console.log(`  ${g("✓")} BEST_PRACTICES.md written (${bestPractices.length} sections)`);
+
+    // Append a reference to AGENTS.md
+    const agentsPath = path.join(ws, "AGENTS.md");
+    const agentsContent = fs.readFileSync(agentsPath, "utf8");
+    if (!agentsContent.includes("BEST_PRACTICES.md")) {
+      fs.appendFileSync(
+        agentsPath,
+        `\n## 📋 Best Practices\nRead \`BEST_PRACTICES.md\` for current guidance from the OpenClaw docs.\nRefreshed: ${new Date().toISOString().split("T")[0]}\n`
+      );
+    }
+  } else {
+    console.log(`  ${y("!")} Couldn't reach docs (offline?) — skipping best practices`);
+  }
 
   // Git init
   if (!fs.existsSync(path.join(ws, ".git"))) {
