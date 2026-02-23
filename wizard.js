@@ -339,14 +339,24 @@ async function stepModel(state) {
     ],
     google: [
       {
-        label: "gemini-2.0-flash",
-        desc: "Fast and cost-effective.",
-        value: "google/gemini-2.0-flash",
+        label: "gemini-3.1-pro-preview",
+        desc: "Newest & most capable. Released Feb 2026. Recommended.",
+        value: "google/gemini-3.1-pro-preview",
       },
       {
-        label: "gemini-2.0-flash-thinking-exp",
-        desc: "Reasoning model.",
-        value: "google/gemini-2.0-flash-thinking-exp",
+        label: "gemini-3-flash-preview",
+        desc: "Fast, latest generation. Great for daily use.",
+        value: "google/gemini-3-flash-preview",
+      },
+      {
+        label: "gemini-2.5-pro",
+        desc: "Stable 2.5 Pro — powerful and reliable.",
+        value: "google/gemini-2.5-pro",
+      },
+      {
+        label: "gemini-2.5-flash",
+        desc: "Fast and cost-effective 2.5 series.",
+        value: "google/gemini-2.5-flash",
       },
     ],
     ollama: [
