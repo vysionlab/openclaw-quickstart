@@ -225,8 +225,24 @@ chmod +x "$WIZARD"
 
 echo ""
 echo "========================================"
-echo "🦞 Dependencies ready — starting setup"
+echo "🦞 Dependencies ready"
 echo "========================================"
 echo ""
 
-exec node "$WIZARD"
+# When piped (curl | bash), stdin isn't a TTY — the wizard needs a real terminal.
+# Detect this and prompt the user to run it manually instead.
+if [ -t 0 ]; then
+    exec node "$WIZARD"
+else
+    echo "  ✅ Installation complete!"
+    echo ""
+    echo "  The setup wizard requires an interactive terminal."
+    echo "  Since you ran via curl | bash, start it manually:"
+    echo ""
+    echo "    openclaw config"
+    echo ""
+    echo "  Or clone the repo and run:"
+    echo "    git clone https://github.com/vysionlab/openclaw-quickstart.git"
+    echo "    bash openclaw-quickstart/install.sh"
+    echo ""
+fi
