@@ -1,167 +1,55 @@
 # 🦞 OpenClaw Quickstart
 
-Get a fully configured OpenClaw agent running in under 5 minutes. Works on **macOS** (Intel + Apple Silicon) and **Linux**.
+The fastest way to get a personal AI agent running on your Mac.
 
-## What You Get
-
-A guided setup wizard that walks you through:
-
-- 🤖 **Model selection** — Anthropic, OpenAI, Google, Ollama, OpenRouter
-- 💬 **Channel setup** — Telegram, Discord, Signal, WhatsApp, or local
-- 🧠 **Agent identity** — name, personality, workspace location
-- 🔑 **API key configuration** — masked input, auto-detects existing env vars
-- 🛠️ **Skills install** — pick from popular skills via clawhub
-- ⚙️ **Config written for you** — `openclaw.json`, workspace files, git repo, shell RC
-
-## Quick Start
-
-```bash
-git clone https://github.com/vysionlab/openclaw-quickstart.git
-cd openclaw-quickstart
-bash install.sh
-```
-
-Or one-liner:
+## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vysionlab/openclaw-quickstart/main/install.sh | bash
 ```
 
-The installer handles system dependencies (Node.js 22+, Homebrew on Mac, git, jq), installs OpenClaw, then launches the interactive wizard automatically.
+Then run the setup wizard:
+
+```bash
+openclaw config
+```
+
+That's it. The wizard walks you through:
+- Picking a model (Claude, GPT-4o, Gemini, Ollama, etc.)
+- Connecting a channel (Telegram, Discord, WhatsApp, etc.)
+- Setting up your workspace
+- Installing skills
+- Starting your agent
+
+## What Gets Installed
+
+| Tool | Purpose |
+|------|---------|
+| Node.js 22 | Runtime |
+| OpenClaw (latest) | AI agent platform |
+
+Installed to `~/.npm-global` — no sudo required.
 
 ## Requirements
 
-- **macOS**: Xcode CLI tools + Homebrew (installed automatically if missing)
-- **Linux**: Ubuntu/Debian with apt
-- **Node.js 22+** — installed automatically if missing
-- **nvm** — used automatically if present
+- macOS (Apple Silicon or Intel) — Linux also supported
+- Internet connection
 
-## The Setup Wizard
-
-After dependencies are ready, you'll be walked through 7 steps:
-
-| Step | What happens |
-|------|-------------|
-| 1 | Welcome |
-| 2 | Choose your workspace directory |
-| 3 | Name your agent + pick a personality vibe |
-| 4 | Pick your AI provider + model, enter API key |
-| 5 | Connect a chat channel (Telegram is easiest) |
-| 6 | Optional add-ons: Brave Search, AgentMail |
-| 7 | Install skills from clawhub |
-
-At the end, your `~/.openclaw/openclaw.json` is written, workspace files are scaffolded, git is initialized, and you get exact commands to pair your channel and start chatting.
+Node.js will be installed automatically if missing (via nvm, Homebrew, or NodeSource).
 
 ## After Setup
 
 ```bash
-# Start your agent
-openclaw gateway start
-
-# Approve Telegram pairing (if you chose Telegram)
-openclaw pairing list telegram
-openclaw pairing approve telegram <CODE>
-
-# Or chat in the terminal
-openclaw chat
+openclaw gateway start     # Start your agent
+openclaw status            # Health check
+openclaw cron list         # View scheduled tasks
+openclaw gateway logs      # View live logs
 ```
 
-## Workspace File Structure
+## Docs
 
-```
-~/openclaw/
-├── AGENTS.md          # Session startup routine & behavior rules
-├── SOUL.md            # Agent personality & tone (shaped by your vibe choice)
-├── IDENTITY.md        # Agent's name & character
-├── USER.md            # About you
-├── MEMORY.md          # Curated long-term memory
-├── WORKSPACE.md       # Architecture docs (agent maintains this)
-├── TOOLS.md           # API keys & local config (gitignored)
-├── HEARTBEAT.md       # Periodic check tasks
-├── memory/            # Daily logs (YYYY-MM-DD.md)
-├── skills/            # Installed skills
-├── templates/         # Reusable templates
-├── config/            # Credentials & config (gitignored)
-└── assets/            # Static files
-```
-
-## How Memory Works
-
-Your agent wakes up fresh each session. The file system is its memory:
-
-- **`memory/YYYY-MM-DD.md`** — Daily raw logs. What happened, decisions made, follow-ups.
-- **`MEMORY.md`** — Curated long-term memory. The agent distills daily logs into this over time.
-- **`TOOLS.md`** — Setup-specific details: API endpoints, device names, anything unique to your environment.
-
-The agent reads recent `memory/` files and `MEMORY.md` on startup. Write things down — mental notes don't survive restarts.
-
-## Optional Add-ons
-
-| Service | Why | Get it |
-|---------|-----|--------|
-| Brave Search API | Web search from chat | [brave.com/search/api](https://brave.com/search/api/) |
-| AgentMail | Dedicated agent email inbox | [agentmail.to](https://agentmail.to) |
-| Tailscale | Access your agent from anywhere | [tailscale.com](https://tailscale.com/) |
-
-## Adding More Skills
-
-```bash
-npm install -g clawhub
-clawhub search <topic>
-clawhub install <skill-name>
-```
-
-Browse the full catalog at [clawhub.com](https://clawhub.com).
-
-## Best Practices Built In
-
-- ✅ **Secrets excluded from git** — TOOLS.md and config/ are gitignored
-- ✅ **Memory system** — daily logs + curated long-term memory
-- ✅ **Agent reads context on startup** — AGENTS.md defines the routine
-- ✅ **Personality shaped by you** — wizard writes the right SOUL.md for your vibe
-- ✅ **Skills on demand** — descriptions route, full instructions load only when needed
-- ✅ **Config written automatically** — no manual JSON editing
+Full documentation: [docs.openclaw.ai](https://docs.openclaw.ai)
 
 ## Moving to a New Server
 
-Use `migrate.sh` to package your existing workspace into a portable archive.
-
-### On the old server
-
-```bash
-bash migrate.sh ~/openclaw openclaw-backup.tar.gz
-```
-
-This packages: `SOUL.md`, `MEMORY.md`, `USER.md`, `AGENTS.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `memory/`, `skills/`, `templates/`, `assets/`, and `config/` (which includes your API keys).
-
-### On the new server
-
-```bash
-# 1. Run the quickstart installer
-curl -fsSL https://raw.githubusercontent.com/vysionlab/openclaw-quickstart/main/install.sh | bash
-
-# 2. Extract your workspace backup
-tar -xzf openclaw-backup.tar.gz -C ~/openclaw
-
-# 3. Start the gateway and re-pair your channel
-openclaw gateway start
-openclaw pairing list telegram
-openclaw pairing approve telegram <CODE>
-
-# 4. Recreate cron jobs (check your old server first)
-openclaw cron list   # note existing jobs on old server
-openclaw cron add    # recreate them on new server
-```
-
-> ⚠️ The archive includes `config/cron-credentials.md` (API keys). Transfer securely — don't share it publicly.
-
-## Links
-
-- [OpenClaw Docs](https://docs.openclaw.ai)
-- [ClawHub Skills](https://clawhub.com)
-- [Discord Community](https://discord.com/invite/clawd)
-- [GitHub](https://github.com/openclaw/openclaw)
-
----
-
-Made with 🦞 by the community. Contributions welcome.
+See [migrate.sh](./migrate.sh) to package your existing workspace for server migration.
