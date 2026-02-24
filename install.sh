@@ -159,6 +159,23 @@ else
 fi
 
 # ============================================================
+# Swap (Linux only — prevents OOM kills during npm install)
+# ============================================================
+if [ "$OS" = "Linux" ]; then
+    TOTAL_MEM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    TOTAL_MEM_MB=$((TOTAL_MEM_KB / 1024))
+    SWAP_KB=$(grep SwapTotal /proc/meminfo | awk '{print $2}')
+    if [ "$SWAP_KB" -eq 0 ] && [ "$TOTAL_MEM_MB" -lt 2048 ]; then
+        info "Low RAM detected (${TOTAL_MEM_MB}MB, no swap) — adding 2GB swap to prevent OOM kills..."
+        sudo fallocate -l 2G /swapfile 2>/dev/null || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null
+        sudo chmod 600 /swapfile
+        sudo mkswap /swapfile
+        sudo swapon /swapfile
+        step "2GB swap enabled"
+    fi
+fi
+
+# ============================================================
 # OpenClaw
 # ============================================================
 if command -v openclaw &>/dev/null; then
@@ -166,11 +183,14 @@ if command -v openclaw &>/dev/null; then
     step "OpenClaw $CURRENT_VER already installed"
     read -p "Upgrade to latest? [y/N]: " upgrade
     if [[ "$upgrade" =~ ^[Yy] ]]; then
+        rm -rf "$NPM_PREFIX/lib/node_modules/openclaw" 2>/dev/null || true
         npm install -g openclaw@latest
         step "OpenClaw upgraded to $(openclaw --version 2>/dev/null)"
     fi
 else
     info "Installing OpenClaw..."
+    # Clean up any partial install that would cause ENOTEMPTY
+    rm -rf "$NPM_PREFIX/lib/node_modules/openclaw" 2>/dev/null || true
     npm install -g openclaw@latest
     step "OpenClaw $(openclaw --version 2>/dev/null) installed"
 fi
