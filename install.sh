@@ -66,9 +66,45 @@ rm -rf "$NPM_PREFIX/lib/node_modules/openclaw" 2>/dev/null || true
 npm install -g "openclaw@$OPENCLAW_VERSION" --silent
 ok "OpenClaw $(openclaw --version 2>/dev/null) installed"
 
-# ── 4. Done ─────────────────────────────────────────────────
+# ── 4. Python + uv ─────────────────────────────────────────
+if command -v uv &>/dev/null; then
+    ok "uv already installed"
+elif command -v pip3 &>/dev/null || command -v pip &>/dev/null; then
+    info "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh &>/dev/null
+    export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+    ok "uv installed"
+fi
+
+# ── 5. mcporter ─────────────────────────────────────────────
+info "Installing mcporter..."
+npm install -g mcporter --silent 2>/dev/null && ok "mcporter installed" || warn "mcporter install failed (optional)"
+
+# ── 6. Excalidraw MCP ───────────────────────────────────────
+info "Installing Excalidraw MCP..."
+npm install -g excalidraw-mcp --silent 2>/dev/null && ok "excalidraw-mcp installed" || warn "excalidraw-mcp install failed (optional)"
+
+# ── 7. obsidian-cli ─────────────────────────────────────────
+info "Installing obsidian-cli..."
+npm install -g @davidenke/obsidian-cli --silent 2>/dev/null && ok "obsidian-cli installed" || warn "obsidian-cli install failed (optional)"
+
+# ── 8. rclone (vault sync) ──────────────────────────────────
+if command -v rclone &>/dev/null; then
+    ok "rclone already installed"
+elif [[ "$(uname -s)" == "Linux" ]]; then
+    info "Installing rclone..."
+    curl -s https://rclone.org/install.sh | sudo bash &>/dev/null && ok "rclone installed" || warn "rclone install failed (optional)"
+fi
+
+# ── 9. Done ─────────────────────────────────────────────────
 echo ""
 echo -e "  ${GREEN}✅ Installation complete!${NC}"
+echo ""
+echo "  Installed extras:"
+echo -e "  ${CYAN}  • mcporter     — MCP server manager${NC}"
+echo -e "  ${CYAN}  • excalidraw-mcp — diagram generation${NC}"
+echo -e "  ${CYAN}  • obsidian-cli  — Obsidian vault search${NC}"
+echo -e "  ${CYAN}  • rclone        — vault sync to Google Drive${NC}"
 echo ""
 echo "  Run the setup wizard:"
 echo ""

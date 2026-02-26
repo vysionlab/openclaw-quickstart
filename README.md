@@ -27,6 +27,11 @@ That's it. The wizard walks you through:
 |------|---------|
 | Node.js 22 | Runtime |
 | OpenClaw (latest) | AI agent platform |
+| mcporter | MCP server manager (HubSpot, n8n, etc.) |
+| excalidraw-mcp | Diagram generation — agent draws `.excalidraw` files |
+| obsidian-cli | Obsidian vault search from the terminal |
+| rclone | Sync your Obsidian vault to Google Drive (Linux) |
+| uv | Fast Python package runner for skills |
 
 Installed to `~/.npm-global` — no sudo required.
 
