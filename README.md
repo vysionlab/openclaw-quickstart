@@ -30,7 +30,6 @@ That's it. The wizard walks you through:
 | mcporter | MCP server manager (HubSpot, n8n, etc.) |
 | excalidraw-mcp | Diagram generation — agent draws `.excalidraw` files |
 | obsidian-cli | Obsidian vault search from the terminal |
-| rclone | Sync your Obsidian vault to Google Drive (Linux) |
 | uv | Fast Python package runner for skills |
 
 Installed to `~/.npm-global` — no sudo required.

@@ -88,15 +88,7 @@ npm install -g excalidraw-mcp --silent 2>/dev/null && ok "excalidraw-mcp install
 info "Installing obsidian-cli..."
 npm install -g @davidenke/obsidian-cli --silent 2>/dev/null && ok "obsidian-cli installed" || warn "obsidian-cli install failed (optional)"
 
-# ── 8. rclone (vault sync) ──────────────────────────────────
-if command -v rclone &>/dev/null; then
-    ok "rclone already installed"
-elif [[ "$(uname -s)" == "Linux" ]]; then
-    info "Installing rclone..."
-    curl -s https://rclone.org/install.sh | sudo bash &>/dev/null && ok "rclone installed" || warn "rclone install failed (optional)"
-fi
-
-# ── 9. Done ─────────────────────────────────────────────────
+# ── 8. Done ─────────────────────────────────────────────────
 echo ""
 echo -e "  ${GREEN}✅ Installation complete!${NC}"
 echo ""
@@ -104,7 +96,6 @@ echo "  Installed extras:"
 echo -e "  ${CYAN}  • mcporter     — MCP server manager${NC}"
 echo -e "  ${CYAN}  • excalidraw-mcp — diagram generation${NC}"
 echo -e "  ${CYAN}  • obsidian-cli  — Obsidian vault search${NC}"
-echo -e "  ${CYAN}  • rclone        — vault sync to Google Drive${NC}"
 echo ""
 echo "  Run the setup wizard:"
 echo ""
